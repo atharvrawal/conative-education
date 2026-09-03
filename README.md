@@ -69,6 +69,10 @@ down for the night will not undo it.
 Everything after this happens in the admin panel — creating groups, approving
 students, uploading test papers, watching a test run, downloading results.
 
+To write a paper, see **[paper-generator-format.md](paper-generator-format.md)** —
+the upload format in full, including a prompt you can hand to an AI assistant to
+draft one for you.
+
 ---
 
 ## Stopping and starting
