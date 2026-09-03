@@ -221,8 +221,7 @@ database before you have restored anything.
 > deletes the database and uploads volumes permanently — every student, every
 > paper, every result, gone with no way back. An update needs no `down` at all.
 
-Have a look at [CHANGELOG.md](CHANGELOG.md) first to see what you are getting.
-Then, in the folder with the compose file:
+In the folder with the compose file:
 
 ```bash
 git pull
