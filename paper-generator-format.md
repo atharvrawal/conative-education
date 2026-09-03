@@ -3,11 +3,20 @@
 A complete description of the file this system accepts, written so that an AI
 assistant with no other information can produce a valid paper from it. Paste
 this whole document into ChatGPT, Claude, or whatever you have, add the
-instruction block in [section 6](#6-the-instruction-block-to-paste), and check
-the result against [section 8](#8-checklist-before-you-upload).
+instruction block in [section 6](#6-the-instruction-block-to-paste), check the
+result against [section 8](#8-checklist-before-you-upload), and — once it is
+uploaded — read the paper on screen as
+[section 9](#9-the-one-check-nothing-else-does-read-the-paper-on-screen)
+describes.
 
 Everything here is the behaviour of the actual importer, including the exact
 wording of its error messages.
+
+**If you read only two sections, read [5](#5-mathematics-and-latex) and
+[9](#9-the-one-check-nothing-else-does-read-the-paper-on-screen).** Anything
+the importer can catch, it catches loudly and tells you the line. Mathematics
+is the exception: a badly written formula uploads perfectly and is discovered
+by a student. That is the failure this document works hardest to prevent.
 
 ---
 
@@ -121,10 +130,10 @@ for untimed`.
 ```yaml
 options:
   - key: a
-    text: "$10\\ ms^{-1}$"
+    text: '$10\ \mathrm{m\,s^{-1}}$'
   - key: b
-    text: "$14\\ ms^{-1}$"
-answer: "b"
+    text: '$14\ \mathrm{m\,s^{-1}}$'
+answer: 'b'
 ```
 
 - **At least two options.** Fewer gives `an mcq_single question needs at least
@@ -183,56 +192,59 @@ a student has started a test, its paper cannot be changed.
 ## 3. Worked examples
 
 A complete, valid file. Copy it, replace the questions, and it will upload as
-it stands.
+it stands. Note the quoting: **single quotes around every `text:`**, so the
+LaTeX inside is written exactly as it would be anywhere else, with no doubled
+backslashes. Copy that habit along with the structure — see
+[section 5](#5-mathematics-and-latex).
 
 ```yaml
 test:
-  name: "JEE Mock 01 — Kinematics & Constants"
+  name: 'JEE Mock 01 — Kinematics & Constants'
   duration_minutes: 60
-  opens_at: "2026-09-10 10:00"   # IST
-  closes_at: "2026-09-10 13:00"  # IST
+  opens_at: '2026-09-10 10:00'   # IST
+  closes_at: '2026-09-10 13:00'  # IST
 
 questions:
   # --- multiple choice, timed, with a figure -------------------------------
   - type: mcq_single
-    text: "A particle moves such that $x = 3t^2 + 2t$. Find $v$ at $t = 2\\ \\mathrm{s}$."
-    image: "images/q1.png"
+    text: 'A particle moves such that $x = 3t^2 + 2t$. Find $v$ at $t = 2\ \mathrm{s}$.'
+    image: 'images/q1.png'
     time_limit_seconds: 120
     marks_correct: 4
     marks_incorrect: -1
     marks_unattempted: 0
     options:
       - key: a
-        text: "$10\\ ms^{-1}$"
+        text: '$10\ \mathrm{m\,s^{-1}}$'
       - key: b
-        text: "$14\\ ms^{-1}$"
+        text: '$14\ \mathrm{m\,s^{-1}}$'
       - key: c
-        text: "$8\\ ms^{-1}$"
+        text: '$8\ \mathrm{m\,s^{-1}}$'
       - key: d
-        text: "$12\\ ms^{-1}$"
-    answer: "b"
+        text: '$12\ \mathrm{m\,s^{-1}}$'
+    answer: 'b'
 
   # --- multiple choice, untimed, no figure ---------------------------------
   - type: mcq_single
-    text: "For $\\int_{0}^{\\pi/2} \\sin^2 x\\, dx$, the value is:"
+    text: 'For $\int_{0}^{\pi/2} \sin^2 x\, dx$, the value is:'
     time_limit_seconds: null     # untimed
     marks_correct: 4
     marks_incorrect: -1
     marks_unattempted: 0
     options:
       - key: a
-        text: "$\\dfrac{\\pi}{4}$"
+        text: '$\dfrac{\pi}{4}$'
       - key: b
-        text: "$\\dfrac{\\pi}{2}$"
+        text: '$\dfrac{\pi}{2}$'
       - key: c
-        text: "$1$"
+        text: '$1$'
       - key: d
-        text: "$\\dfrac{\\pi}{8}$"
-    answer: "a"
+        text: '$\dfrac{\pi}{8}$'
+    answer: 'a'
 
   # --- numeric, tolerant to two decimal places -----------------------------
   - type: numeric
-    text: "Acceleration due to gravity, in $ms^{-2}$, to 2 decimal places."
+    text: 'Acceleration due to gravity, in $\mathrm{m\,s^{-2}}$, to 2 decimal places.'
     time_limit_seconds: 0        # 0, -1 and null all mean untimed
     marks_correct: 4
     marks_incorrect: 0
@@ -242,13 +254,30 @@ questions:
 
   # --- numeric, exact whole number, timed ----------------------------------
   - type: numeric
-    text: "A body starts from rest with $a = 2\\ ms^{-2}$. Its displacement after $5\\ \\mathrm{s}$, in metres."
+    text: 'A body starts from rest with $a = 2\ \mathrm{m\,s^{-2}}$. Its displacement after $5\ \mathrm{s}$, in metres.'
     time_limit_seconds: 90
     marks_correct: 4
     marks_incorrect: -1
     marks_unattempted: 0
     answer: 25
     tolerance: 0
+
+  # --- a question whose prose contains an apostrophe -----------------------
+  - type: mcq_single
+    text: 'By Newton''s third law, the reaction to the weight of a book on a table acts on:'
+    marks_correct: 4
+    marks_incorrect: -1
+    marks_unattempted: 0
+    options:
+      - key: a
+        text: 'The table'
+      - key: b
+        text: 'The Earth'
+      - key: c
+        text: 'The book'
+      - key: d
+        text: 'Nothing'
+    answer: 'b'
 ```
 
 The same paper in JSON, if you prefer it — save as `test.json`:
@@ -271,7 +300,7 @@ The same paper in JSON, if you prefer it — save as `test.json`:
     },
     {
       "type": "numeric",
-      "text": "Acceleration due to gravity, in $ms^{-2}$, to 2 decimal places.",
+      "text": "Acceleration due to gravity, in $\\mathrm{m\\,s^{-2}}$, to 2 decimal places.",
       "marks_correct": 4,
       "marks_incorrect": 0,
       "marks_unattempted": 0,
@@ -282,9 +311,9 @@ The same paper in JSON, if you prefer it — save as `test.json`:
 }
 ```
 
-Note that JSON needs `\\` where YAML also needs `\\`, but JSON has no comments
-and no unquoted `null` shorthand for untimed — just leave `time_limit_seconds`
-out instead.
+**Prefer YAML.** JSON has no single-quoted string, so every backslash in it has
+to be doubled — exactly the friction YAML's single quotes remove. JSON also has
+no comments, and its errors cannot report a line number.
 
 ---
 
@@ -332,43 +361,144 @@ assistant to work this way.
 
 ---
 
-## 5. LaTeX
+## 5. Mathematics and LaTeX
 
-Maths is written between dollar signs and is typeset when the student sees it.
+Read this section before writing a single question. Both of the mistakes it
+guards against are silent: the upload succeeds, and the damage is only visible
+to the student sitting the paper.
+
+### Every piece of mathematics must be LaTeX
+
+Not "may be" — must. A paper written with plain-text mathematics is a defective
+paper. It reaches students looking like a hastily typed email, and nothing in
+the upload will warn you, because as far as the importer is concerned `x^2` is
+a perfectly ordinary sentence.
+
+| Never write this | Write this |
+| --- | --- |
+| `x^2` | `$x^2$` |
+| `mu0`, `u0` | `$\mu_0$` |
+| `root 3`, `sqrt(3)` | `$\sqrt{3}$` |
+| `30 degrees` | `$30^\circ$` |
+| `degree C`, `deg C` | `$^\circ\mathrm{C}$` |
+| `10^-19 C` | `$10^{-19}\ \mathrm{C}$` |
+| `m/s^2` | `$\mathrm{m\,s^{-2}}$` |
+| `pi/4` | `$\dfrac{\pi}{4}$` |
+| `delta x` | `$\Delta x$` |
+| `integral from 0 to pi/2 of sin^2 x dx` | `$\int_{0}^{\pi/2}\sin^2 x\,dx$` |
+| `H2SO4` | `$\mathrm{H_2SO_4}$` |
+| `vector F` | `$\vec{F}$` |
+| `2 x 10^8` | `$2\times 10^{8}$` |
+
+This applies inside option text as much as inside question text. An option
+reading `10 m/s` next to three others reading `$10\ \mathrm{m\,s^{-1}}$` is
+just as wrong.
+
+### Use single quotes, and stop thinking about escaping
+
+Wrap every `text:` value in **single** quotes. Inside single quotes YAML treats
+a backslash as an ordinary character, so you write LaTeX exactly as you would
+write it anywhere else — nothing to double, nothing to escape:
+
+```yaml
+text: 'For $\int_{0}^{\pi/2} \sin^2 x\, dx$, the value is:'
+text: '$\dfrac{\pi}{4}$'
+text: 'A particle moves such that $x = 3t^2 + 2t$. Find $v$ at $t = 2\ \mathrm{s}$.'
+```
+
+The one thing single quotes care about is an apostrophe in your prose, which
+must be doubled:
+
+```yaml
+text: 'State Newton''s second law.'      # two apostrophes, not one
+```
+
+If a question is long or full of apostrophes, a block scalar needs no escaping
+of any kind:
+
+```yaml
+text: |-
+  A block of mass $m$ slides down a frictionless incline of angle $\theta$.
+  Using Newton's second law, find its acceleration.
+```
+
+Double quotes also work, but inside them every backslash must be written twice
+(`"\\int"` to mean `\int`). There is no reason to take that on. Use single
+quotes.
+
+> **Do not let escaping put you off using LaTeX.** Getting the quoting wrong is
+> the *safe* failure: YAML rejects the file, you are told the line, and you fix
+> it in thirty seconds. Writing `x^2` instead of `$x^2$` is the *dangerous*
+> one: it uploads cleanly and nobody finds out until a student is looking at it.
+> Faced with any doubt, write the LaTeX.
+
+### Delimiters
 
 | Form | Use |
 | --- | --- |
 | `$ ... $` | Inline, within a sentence. **Must stay on one line** |
 | `$$ ... $$` | Displayed on its own line, centred. May span lines |
 
-**Backslashes must be doubled inside double-quoted strings.** This is the
-single most common mistake. In YAML, `"\\int"` produces the LaTeX `\int`,
-while `"\int"` is a broken escape. Three real examples, exactly as they appear
-in a working paper:
+### A cookbook of forms that render
 
-```yaml
-text: "A particle moves such that $x = 3t^2 + 2t$. Find $v$ at $t = 2\\ \\mathrm{s}$."
-text: "For $\\int_{0}^{\\pi/2} \\sin^2 x\\, dx$, the value is:"
-text: "$\\dfrac{\\pi}{4}$"
+Build your mathematics out of these. They are known to typeset correctly here.
+Copying a form from this table is always safer than composing a new one from
+memory.
+
+| | |
+| --- | --- |
+| **Greek** | `\alpha` `\theta` `\lambda` `\omega` `\mu_0` `\varepsilon_0` `\Delta x` `\pi` |
+| **Powers, indices** | `x^2` `v^{-1}` `10^{-19}` `x_1` `\mathrm{H_2SO_4}` |
+| **Fractions** | `\dfrac{\pi}{4}` `\frac{dv}{dt}` `\dfrac{a}{b}` |
+| **Roots** | `\sqrt{3}` `\sqrt{2gh}` |
+| **Trig, logs** | `\sin^2 x` `\sin^{-1}x` `\log_{10} x` `\tan\theta` |
+| **Calculus** | `\int_{0}^{\pi/2}\sin^2 x\,dx` `\frac{dv}{dt}` |
+| **Vectors** | `\vec{F}` `\hat{n}` |
+| **Multiplication** | `2\times 10^{8}` `5\cdot 3` |
+| **Brackets that grow** | `\left(\dfrac{a}{b}\right)^{2}` |
+| **Degrees** | `30^\circ` and, for temperature, `^\circ\mathrm{C}` |
+| **Units** | `\mathrm{m\,s^{-1}}` `\mathrm{m\,s^{-2}}` `\mathrm{J\,kg^{-1}\,K^{-1}}` `\mathrm{kg\,m^{-3}}` `\mathrm{N\,m}` |
+| **A number with a unit** | `1.6\times10^{-19}\ \mathrm{C}` `4.18\ \mathrm{J\,g^{-1}\,K^{-1}}` |
+
+Units go inside `\mathrm{...}` so they stand upright instead of leaning over
+like variables, and `\,` is the thin space between them. A single `\ ` separates
+the number from its unit.
+
+### The four ways it breaks
+
+**1. A superscript or subscript straight after a spacing command.** This is the
+one that looks right and is not:
+
+```
+BROKEN   $\mathrm{cal}\,g^{-1}\,^{\circ}C^{-1}$
 ```
 
-Those render as $x = 3t^2 + 2t$, the integral of $\sin^2 x$, and a fraction.
+`^` needs something to sit on, and `\,` is a space, not something. The same
+goes for `\;` and `\quad`. Three ways to fix it, all fine:
 
-Two ways to avoid the doubling entirely, both valid:
-
-```yaml
-# single quotes: backslashes are literal, so write LaTeX exactly as-is
-text: 'For $\int_{0}^{\pi/2} \sin^2 x\, dx$, the value is:'
-
-# a block scalar, for a long question
-text: |
-  A block of mass $m$ slides down a frictionless incline of angle
-  $\theta$. Find its acceleration.
+```
+$\mathrm{cal\,g^{-1}\,{}^{\circ}C^{-1}}$      an empty {} gives it a base
+$\mathrm{cal\,g^{-1}}\ ^{\circ}\mathrm{C^{-1}}$   a plain \ space instead of \,
+$4.18\ \mathrm{J\,g^{-1}\,K^{-1}}$                sidestep it: use J and K
 ```
 
-Maths that cannot be typeset is shown as the raw text you wrote rather than as
-an error, so a broken formula will not stop the upload — it will simply look
-wrong to the student. Read your questions on screen after uploading.
+**2. Unmatched braces.** `\dfrac{\pi}{4` — count every `{` and `}`.
+
+**3. A command that does not exist here.** `\vecc{F}`, `\ce{H2O}`. Chemistry
+notation is **not** available: write `$\mathrm{H_2SO_4}$`, never `$\ce{H2SO4}$`.
+If a command is not in the cookbook above, do not assume it works.
+
+**4. A stray `$`.** An odd number of dollar signs in one line leaves maths
+running into your prose, or prose being typeset as maths.
+
+### What broken mathematics looks like
+
+**It does not stop the upload.** The file imports, the test opens, and the
+question appears — with the offending expression printed **in red** wherever it
+appears, source code and all, for every student who reaches it.
+
+Red is therefore the thing to look for, and it is easy to spot at a glance.
+[Section 8](#8-checklist-before-you-upload) tells you where to look.
 
 ---
 
@@ -380,13 +510,12 @@ four bracketed placeholders filled in:
 ```text
 Using the question paper format document above, write a question paper for me.
 
-Subject:            [e.g. Physics]
+Subject:             [e.g. Physics]
 Number of questions: [e.g. 20]
-Topics:             [e.g. 8 on kinematics, 7 on Newton's laws, 5 on work and energy]
-Difficulty:         [e.g. JEE Main level, with the last three harder]
+Topics:              [e.g. 8 on kinematics, 7 on Newton's laws, 5 on work and energy]
+Difficulty:          [e.g. JEE Main level, with the last three harder]
 
-Requirements:
-
+SCHEMA
 1. Follow the schema in that document exactly. Every question must carry type,
    text, marks_correct, marks_incorrect, marks_unattempted, and — for
    mcq_single — at least two options and an answer matching one of their keys,
@@ -397,21 +526,54 @@ Requirements:
 3. Use marks_correct: 4, marks_incorrect: -1, marks_unattempted: 0 for
    multiple-choice questions, and marks_correct: 4, marks_incorrect: 0,
    marks_unattempted: 0 for numeric questions, unless I have said otherwise.
-4. Do not include an image field on any question. If a question genuinely needs
-   a diagram, write it without an image field and then, after the code block,
-   list those questions by their number and describe what each figure should
-   show. Never invent a filename.
-5. Do not include a groups field.
-6. Write LaTeX between single dollar signs, and double every backslash inside
-   double-quoted strings, exactly as the examples in the document do.
-7. Vary the position of the correct answer across the options; do not let it
-   sit at the same key repeatedly.
-8. Check before answering that each mcq answer value is one of that question's
-   own option keys, and that every numeric question has a tolerance.
+4. Do not include a groups field.
+
+MATHEMATICS — the part most likely to go wrong
+5. Every mathematical symbol, variable, power, unit, Greek letter and formula
+   must be LaTeX between dollar signs. Plain-text mathematics is not an
+   acceptable fallback: never write x^2, mu0, sqrt(3), pi/4, m/s^2, 10^-19 or
+   "degree C" as bare text. This applies to option text as much as to question
+   text.
+6. Put single quotes around every text: value, so you can write LaTeX exactly
+   as it is without doubling any backslashes. If the prose contains an
+   apostrophe, double it: 'Newton''s second law'. Do not use double quotes for
+   anything containing LaTeX.
+7. Do not avoid LaTeX because you are unsure of the quoting. A quoting mistake
+   is caught and reported the moment I upload the file; plain-text mathematics
+   is accepted silently and reaches students looking wrong. If in doubt, write
+   the LaTeX.
+8. Build expressions only from the forms in that document's cookbook. Units go
+   inside \mathrm{...} with \, between them, like $\mathrm{m\,s^{-2}}$ and
+   $4.18\ \mathrm{J\,g^{-1}\,K^{-1}}$. Do not compose a unit or a command from
+   memory or by analogy with something that looks similar.
+9. Never place ^ or _ immediately after a spacing command. $\,^{\circ}C$ is
+   invalid LaTeX; write $\,{}^{\circ}\mathrm{C}$ or restructure the expression.
+   Chemistry notation such as \ce{...} is not available — write
+   $\mathrm{H_2SO_4}$.
+
+BEFORE YOU ANSWER — check your own output
+10. Re-read every question and option you have written and confirm, one at a
+    time: each mcq answer value is one of that question's own option keys; each
+    numeric question has a tolerance; every $ is paired; every { has a matching
+    }; no ^ or _ follows a \, or \; ; no mathematics is left as plain text; and
+    every command you used appears in the document's cookbook.
+
+FIGURES
+11. Do not include an image field on any question. If a question genuinely
+    needs a diagram, write it without an image field and then, after the code
+    block, list those questions by number and describe what each figure should
+    show. Never invent a filename.
+
+12. Vary the position of the correct answer across the options; do not let it
+    sit at the same key repeatedly.
 
 Output only the YAML, in a single fenced code block, with no commentary before
 it. Any notes about figures go after the code block.
 ```
+
+If you are asking an assistant to fix or extend a paper it wrote earlier, add:
+*"Keep every rule above, especially the mathematics rules — do not convert any
+LaTeX back to plain text."*
 
 ---
 
@@ -488,6 +650,21 @@ Read down the file once. Almost every rejection is one of these.
 - [ ] `tolerance` is present on every one of them, `0` for an exact match
 - [ ] No `options`
 
+**Mathematics** — nothing here will fail the upload, so this pass is the only
+thing standing between a bad expression and a student
+
+- [ ] **No plain-text mathematics anywhere**, in question text or option text.
+      Scan for the tell-tales: a bare `^`, `sqrt`, `pi`, `mu`, `deg`, `/s`,
+      `^-1`, a number followed by a unit with no `$` around it
+- [ ] Every `text:` with mathematics in it is in **single** quotes, and any
+      apostrophe inside is doubled
+- [ ] Dollar signs are paired — an even number on every line
+- [ ] Braces balance — every `{` has its `}`
+- [ ] No `^` or `_` directly after `\,`, `\;` or `\quad`
+- [ ] No `\ce{...}`, and no command that is not in the
+      [cookbook](#a-cookbook-of-forms-that-render)
+- [ ] Units are inside `\mathrm{...}`
+
 **Images**
 
 - [ ] Every `image` path names a file that is actually in the zip
@@ -500,6 +677,34 @@ Read down the file once. Almost every rejection is one of these.
 - [ ] Only `test` and `questions` at the top level
 - [ ] `unzip -l` shows the test file at the top of the archive
 
-If the upload is rejected anyway, the list it gives you names the line and the
+If the upload is rejected, the list it gives you names the line and the
 question number for each problem, and fixing them all and re-uploading is safe
 — nothing was written the first time.
+
+---
+
+## 9. The one check nothing else does: read the paper on screen
+
+**Do this every time.** It takes a minute and it is the only thing that catches
+broken mathematics, because broken mathematics uploads perfectly happily.
+
+After the upload succeeds, stay on the same page. Below the upload control is
+the **Questions** panel, showing the whole paper exactly as a student will see
+it. Read down it and look for:
+
+1. **Anything red.** Red is how a mathematical expression that could not be
+   typeset is displayed — the raw source, in red, in the middle of the
+   question. It is unmistakable once you know to look.
+2. **Stray dollar signs** on screen. A `$` you can actually see means its pair
+   is missing and the maths around it was never typeset.
+3. **Mathematics that is still plain text.** `x^2` and `m/s^2` will sit there
+   looking like ordinary typing. This is the failure with no visual alarm at
+   all, so it needs your eyes rather than a colour.
+4. **Formulae that render but say the wrong thing** — a missing minus sign, a
+   subscript that swallowed the next character.
+
+Anything wrong: fix the file and upload again. A re-upload replaces the paper
+completely, so there is no cleaning up to do and no cost to doing it twice.
+
+Do this **before** the test opens, and before any student has started — once an
+attempt exists the paper is frozen.
