@@ -1,0 +1,108 @@
+# Conative Education — deployment stack.
+#
+# This file is the whole distribution. Put it in an empty directory and run:
+#
+#     docker compose up -d
+#
+# It needs no .env, no source checkout and no build tools. Every value below
+# has a working default and every one of them can still be overridden from the
+# environment if you need to.
+#
+# Two things are deliberately not defaulted:
+#
+#   JWT_SECRET  The key that signs session cookies. A key shipped in a public
+#               image would be the same key on every deployment, so anyone who
+#               pulled the image could forge a session for any user anywhere.
+#               Left empty, the api generates a random one on first boot and
+#               stores it in the database, so restarts do not sign anyone out.
+#
+#   The admin password defaults to change-me-too, and the admin panel shows a
+#   warning banner until it is changed. Change it on first login.
+#
+# Image tags are pinned to an exact version, never :latest, so restarting or
+# re-pulling cannot move a running stack onto a different build.
+
+name: conative
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-conative}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-conative}
+      POSTGRES_DB: ${POSTGRES_DB:-conative}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # No published port. The database is reachable only from the other
+    # containers on this network, which is why fixed credentials above are
+    # not a weakness.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-conative} -d ${POSTGRES_DB:-conative}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    image: ghcr.io/atharvrawal/conative-api:1.0.1
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://conative:conative@db:5432/conative}
+      # Empty on purpose — see the note at the top of this file. Set it only
+      # if you want to control the key yourself; changing it signs everyone out.
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_TTL_HOURS: ${JWT_TTL_HOURS:-12}
+      # Seeds the admin account on first boot. Changing these and restarting
+      # rewrites the account — that is the recovery path if the password is
+      # lost. Leaving them alone lets the password set in the UI stand.
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me-too}
+      # auto: Secure only when the request arrived over HTTPS. Correct both on
+      # a plain-HTTP LAN and behind a TLS proxy.
+      COOKIE_SECURE: ${COOKIE_SECURE:-auto}
+      # Who may set X-Forwarded-For / X-Forwarded-Proto. The api's own port
+      # is not published, so the only thing that can reach it is the web
+      # container on this stack's private network — which is why the Docker
+      # private ranges are enough here, and why this file does not pin a
+      # subnet that could collide with a VPN or another project on the
+      # operator's machine. Add your own proxy's address if you put one in
+      # front of 8080.
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-172.16.0.0/12,192.168.0.0/16,10.0.0.0/8}
+      UPLOADS_DIR: /data/uploads
+      # Loose on purpose: a whole class shares one address on a LAN, and a
+      # tight per-address signup limit locks the cohort out during onboarding.
+      SIGNUP_ATTEMPTS_PER_HOUR: ${SIGNUP_ATTEMPTS_PER_HOUR:-50}
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health', timeout=3).status == 200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  web:
+    image: ghcr.io/atharvrawal/conative-web:1.0.1
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      # 127.0.0.1 rather than localhost: nginx listens on IPv4 only and wget
+      # tries ::1 first.
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+volumes:
+  # conative_pgdata and conative_uploads, because of `name:` above. The backup
+  # commands in the README refer to them by those names.
+  pgdata:
+  uploads:
