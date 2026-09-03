@@ -21,6 +21,10 @@
 #
 # Image tags are pinned to an exact version, never :latest, so restarting or
 # re-pulling cannot move a running stack onto a different build.
+#
+# Backups are automatic. A fourth container writes one nightly and one at every
+# start, into ./backups next to this file. See the README for restoring, and
+# for the one thing it cannot do for you: copying them off the machine.
 
 name: conative
 
@@ -100,6 +104,117 @@ services:
       timeout: 5s
       retries: 6
       start_period: 10s
+
+  # Automatic backups. Nightly, plus one every time the stack starts, so there
+  # is always at least one backup from the current run. They land in ./backups
+  # next to this file — visible, and copyable to a USB drive by dragging.
+  #
+  # No new dependency: this is the same postgres:16 image the database uses,
+  # running a sleep-until-the-hour loop instead of a server.
+  backup:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      # pg_dump and pg_isready read these directly, so the commands below
+      # carry no connection flags.
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:-conative}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-conative}
+      PGDATABASE: ${POSTGRES_DB:-conative}
+      # 24-hour clock. The timezone below is the clock it means.
+      BACKUP_TIME: ${BACKUP_TIME:-02:30}
+      # How many nightly backups to keep. Older ones are deleted.
+      BACKUP_KEEP: ${BACKUP_KEEP:-7}
+      TZ: ${TZ:-Asia/Kolkata}
+    volumes:
+      # Read-only: a backup must never be able to damage what it is backing up.
+      - uploads:/data/uploads:ro
+      - ./backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -uo pipefail
+
+        DIR=/backups
+        KEEP="$${BACKUP_KEEP:-7}"
+        AT="$${BACKUP_TIME:-02:30}"
+
+        log() { printf '%s  backup: %s\n' "$$(date '+%F %T %Z')" "$$*"; }
+
+        case "$$KEEP" in ''|*[!0-9]*) KEEP=7 ;; esac
+        [ "$$KEEP" -lt 1 ] && KEEP=1
+
+        if ! date -d "today $$AT" >/dev/null 2>&1; then
+          log "BACKUP_TIME='$$AT' is not a time I understand (want HH:MM). Using 02:30."
+          AT=02:30
+        fi
+
+        # Waits rather than assuming. On a machine reboot Docker restarts
+        # containers without honouring depends_on, so the database may not be
+        # up yet however carefully this file is ordered.
+        wait_for_db() {
+          pg_isready -q && return 0
+          log "waiting for the database"
+          until pg_isready -q; do sleep 3; done
+        }
+
+        prune() {
+          ls -1d "$$DIR"/20*/ 2>/dev/null | sort -r | tail -n +$$((KEEP + 1)) |
+            while read -r old; do
+              rm -rf "$$old" && log "pruned $$(basename "$$old"), keeping $$KEEP"
+            done
+        }
+
+        run_backup() {
+          rm -rf "$$DIR"/.partial-* 2>/dev/null
+          stamp="$$(date +%Y-%m-%d_%H%M)"
+          tmp="$$DIR/.partial-$$stamp"
+          out="$$DIR/$$stamp"
+
+          mkdir -p "$$tmp" || { log "FAILED: cannot write to ./backups"; return 1; }
+          if ! pg_dump -Fc -f "$$tmp/db.dump"; then
+            log "FAILED: pg_dump"; rm -rf "$$tmp"; return 1
+          fi
+          if ! tar czf "$$tmp/uploads.tar.gz" -C /data/uploads .; then
+            log "FAILED: tar of uploads"; rm -rf "$$tmp"; return 1
+          fi
+
+          # Only now does it get a real name. A half-written backup is never
+          # mistakable for a finished one, so the newest dated directory in
+          # ./backups is always a complete, matching pair of files.
+          rm -rf "$$out"
+          mv "$$tmp" "$$out" || { log "FAILED: naming $$stamp"; return 1; }
+          chmod -R a+rX "$$out"
+          log "wrote backups/$$stamp ($$(du -sh "$$out" | cut -f1))"
+          prune
+        }
+
+        log "nightly at $$AT $$(date '+%Z'), keeping $$KEEP, writing to ./backups"
+        wait_for_db
+        run_backup
+
+        while true; do
+          now="$$(date +%s)"
+          next="$$(date -d "today $$AT" +%s)"
+          [ "$$next" -le "$$now" ] && next="$$(date -d "tomorrow $$AT" +%s)"
+          gap=$$((next - now))
+          log "next backup in $$((gap / 3600))h $$((gap % 3600 / 60))m"
+          sleep "$$gap"
+          wait_for_db
+          run_backup
+        done
+    healthcheck:
+      # Goes red if the newest backup is more than 26 hours old, so a backup
+      # loop that has quietly stopped shows up in `docker compose ps` instead
+      # of being discovered on the day it is needed.
+      test: ["CMD-SHELL", "find /backups -maxdepth 1 -name '20*' -type d -mmin -1560 | grep -q ."]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 300s
 
 volumes:
   # conative_pgdata and conative_uploads, because of `name:` above. The backup

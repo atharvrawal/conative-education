@@ -26,7 +26,8 @@ docker compose up -d
 
 That is the whole installation. The first run downloads the images and takes a
 few minutes; after that it starts in seconds, runs in the background, and comes
-back on its own when the computer restarts.
+back on its own when the computer restarts. A `backups` folder appears next to
+the compose file — [see below](#backups), it matters.
 
 ---
 
@@ -82,13 +83,14 @@ day to day.
 Check on it:
 
 ```bash
-docker compose ps        # all three should say "healthy"
+docker compose ps        # all four should say "healthy"
 docker compose logs -f   # live log, Ctrl-C to stop watching
 ```
 
 ## Where the data lives
 
-In two Docker volumes on the machine, not in the folder with the compose file:
+Your live data is in two Docker volumes on the machine, not in the folder with
+the compose file:
 
 | Volume | Holds |
 | --- | --- |
@@ -98,53 +100,112 @@ In two Docker volumes on the machine, not in the folder with the compose file:
 They survive `stop`, `start`, `restart`, and updating to a new version. The one
 command that deletes them is `docker compose down -v`. Do not run that.
 
-Copying the compose file to another computer does **not** copy your data. Use
-the backup below.
+The `backups` folder *is* in the folder with the compose file, deliberately —
+it is the one thing you can see, copy and carry away, and the only thing that
+survives `down -v`.
+
+Copying the compose file to another computer does **not** copy your data. The
+backups are what moves it.
 
 ---
 
-## Backup
+## Backups
 
-Run this on the machine that runs the platform. It writes two files, stamped
-with the date, into whatever folder you are in.
+Backups run on their own. There is nothing to remember and nothing to type.
 
-```bash
-docker compose exec -T db pg_dump -U conative -Fc conative > conative-db-$(date +%F).dump
+A fourth container writes one **every night at 02:30**, and one **every time the
+stack starts**, so there is always at least one backup from the current run.
+They land in a `backups` folder next to your compose file:
 
-docker run --rm -v conative_uploads:/data alpine tar czf - -C /data . \
-  > conative-uploads-$(date +%F).tar.gz
+```
+conative/
+  docker-compose.yml
+  backups/
+    2026-09-03_0230/
+      db.dump          students, groups, tests, answers, scores
+      uploads.tar.gz   the images from your test papers
+    2026-09-04_0230/
+      ...
 ```
 
-Keep **both** files together — the database references the images by name, so
-one without the other is only half a backup. Put them somewhere that is not
-this computer: a USB drive, Google Drive, anywhere. This is the thing you will
-want the day the laptop stops turning on.
+The two files in a dated folder belong together: the database refers to the
+images by name, so one without the other is half a backup. A folder only gets
+its dated name once both files are finished, so the newest one is always a
+complete, matching pair — there is no such thing as a half-written backup here.
 
-Do this after every test day.
+The **last 7** are kept. Older ones are deleted automatically, so the folder
+does not grow without limit.
 
-## Restore
-
-On a fresh machine: install Docker, copy in the compose file and both backup
-files, then:
+Want one right now — before an update, or at the end of a test day?
 
 ```bash
-docker compose up -d
-sleep 30                                   # let the database finish starting
+docker compose restart backup
+```
 
-# database
+To check that backups are actually happening, `docker compose ps` reports
+`backup` as **healthy** only while there is a backup less than 26 hours old. If
+it ever reads unhealthy, backups have stopped and `docker compose logs backup`
+will say why.
+
+On Linux the files belong to `root`. You can read and copy them as yourself;
+deleting one by hand needs `sudo`, which is why the pruning above is automatic.
+
+### Copy them off this computer
+
+**A backup that only exists on this laptop is not a backup.** The disk that
+fails takes it with it, and that is the exact day you need it.
+
+The simplest thing that keeps working without anyone remembering: put the whole
+`conative` folder — compose file, `backups` and all — **inside a synced cloud
+folder**, the one the Google Drive, Dropbox or OneDrive desktop app already
+watches. Every night's backup is then uploaded on its own. Nobody has to do
+anything, which is the only kind of routine that survives a busy term.
+
+If you would rather not use cloud storage: keep a USB drive for this and drag
+the newest dated folder onto it after every test day. Use two drives and
+alternate, so a corrupt one is never the only copy.
+
+## Restore from backup
+
+On a fresh machine, or on this one after something went badly wrong. You need
+Docker installed, `docker-compose.yml`, and one dated backup folder. Put the
+backup folder inside a `backups` folder next to the compose file, as it was.
+
+**1. Start the database on its own** and wait for it to be ready:
+
+```bash
+docker compose up -d --wait db
+```
+
+**2. Restore the database.** Use your own dated folder in place of this one:
+
+```bash
 docker compose exec -T db pg_restore -U conative -d conative --clean --if-exists \
-  < conative-db-2026-09-03.dump
-
-# images
-docker run -i --rm -v conative_uploads:/data alpine \
-  sh -c 'rm -rf /data/* && tar xzf - -C /data' < conative-uploads-2026-09-03.tar.gz
-
-docker compose restart api
+  < backups/2026-09-04_0230/db.dump
 ```
 
-Use your own filenames in place of the dated ones. Then open
-<http://localhost:8080> and sign in — including with the admin password you
-had set, because that is in the backup too.
+**3. Restore the images:**
+
+```bash
+docker run -i --rm -v conative_uploads:/data alpine \
+  sh -c 'rm -rf /data/* && tar xzf - -C /data' \
+  < backups/2026-09-04_0230/uploads.tar.gz
+```
+
+**4. Start everything:**
+
+```bash
+docker compose up -d --wait
+```
+
+Then open <http://localhost:8080> and sign in. Everything comes back: students,
+groups, papers, submitted answers and scores, the figures in the questions, and
+the admin password you had set — that is in the backup too, so the one printed
+further up this page will *not* work.
+
+The database is started alone in step 1 on purpose. Bringing the whole stack up
+first would have the backup container take a snapshot of the still-empty
+database before you have restored anything.
 
 ---
 
@@ -159,7 +220,8 @@ docker compose up -d
 ```
 
 Any database changes the new version needs are applied automatically while it
-starts. Your data is kept. Take a backup first anyway.
+starts. Your data is kept. Take a fresh backup first anyway — `docker compose
+restart backup`, and check the new folder appeared before you pull.
 
 The image versions are written into the compose file, so a stack that is
 running today will still be running the same build tomorrow. Nothing updates
@@ -178,6 +240,9 @@ Two specific cases:
 - **Students cannot reach it.** They are probably on a different Wi-Fi, or the
   computer's firewall is blocking port 8080. Check <http://localhost:8080>
   works on the machine itself first — that separates the two problems.
+- **`backup` says unhealthy.** No backup has been written in the last 26
+  hours. `docker compose logs backup` gives the reason — nearly always no room
+  left on the disk. `docker compose restart backup` retries immediately.
 - **You forgot the admin password.** Recoverable without losing anything. Make
   a file called `.env` next to the compose file containing one line —
   `ADMIN_PASSWORD=your-new-password` — then run `docker compose up -d`. The
@@ -193,8 +258,11 @@ make a file called `.env` next to the compose file with only the lines you
 want to change:
 
 ```bash
-WEB_PORT=9000          # if something else is already using 8080
-ADMIN_USERNAME=priya   # a different admin username
+WEB_PORT=9000            # if something else is already using 8080
+ADMIN_USERNAME=priya     # a different admin username
+BACKUP_TIME=23:45        # when the nightly backup runs, 24-hour clock
+BACKUP_KEEP=14           # how many nightly backups to keep
+TZ=Asia/Kolkata          # the clock BACKUP_TIME is read against
 ```
 
 Then `docker compose up -d`. Every value in the compose file can be set this
