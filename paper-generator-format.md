@@ -441,9 +441,11 @@ quotes.
 
 ### A cookbook of forms that render
 
-Build your mathematics out of these. They are known to typeset correctly here.
-Copying a form from this table is always safer than composing a new one from
-memory.
+Start here. These are known to typeset correctly, so reaching for one of them
+is always cheaper than working something out. The table cannot cover every
+formula a real paper needs, though — when you do compose something new, check
+it against [the syntax rules](#checking-something-the-cookbook-does-not-cover)
+below before you use it.
 
 | | |
 | --- | --- |
@@ -491,14 +493,29 @@ If a command is not in the cookbook above, do not assume it works.
 **4. A stray `$`.** An odd number of dollar signs in one line leaves maths
 running into your prose, or prose being typeset as maths.
 
-### What broken mathematics looks like
+### Checking something the cookbook does not cover
 
-**It does not stop the upload.** The file imports, the test opens, and the
-question appears — with the offending expression printed **in red** wherever it
-appears, source code and all, for every student who reaches it.
+When you write an expression that is not in the table, put it through these
+three rules before using it:
 
-Red is therefore the thing to look for, and it is easy to spot at a glance.
-[Section 8](#8-checklist-before-you-upload) tells you where to look.
+1. **Braces balance.** Every `{` has a matching `}`, counting left to right.
+2. **Every `^` and `_` has something to attach to** immediately before it — a
+   letter, a digit, or a closing `}`. A spacing command (`\,` `\;` `\!`
+   `\quad` `\qquad`) is not something; that is the failure described above.
+3. **Every command is one you know exists here**, not one that resembles a
+   command you know. `\vec` yes, `\vecc` no. `\mathrm` yes, `\ce` no.
+
+Rules 1 and 2 are mechanical, and the
+[script in section 8](#a-mechanical-check-before-you-upload) applies them to a
+whole file in a second. Rule 3 needs judgment: if you are not certain a command
+exists, rewrite the expression using ones from the cookbook.
+
+### Broken mathematics does not stop the upload
+
+The file imports, the test opens, and the question reaches students with the
+expression not typeset as you intended. Nothing in the upload will tell you.
+The mechanical check below, and reading the paper on screen afterwards, are
+what catch it.
 
 ---
 
@@ -542,21 +559,28 @@ MATHEMATICS — the part most likely to go wrong
    is caught and reported the moment I upload the file; plain-text mathematics
    is accepted silently and reaches students looking wrong. If in doubt, write
    the LaTeX.
-8. Build expressions only from the forms in that document's cookbook. Units go
-   inside \mathrm{...} with \, between them, like $\mathrm{m\,s^{-2}}$ and
-   $4.18\ \mathrm{J\,g^{-1}\,K^{-1}}$. Do not compose a unit or a command from
-   memory or by analogy with something that looks similar.
+8. Use the forms in that document's cookbook wherever they cover what you need.
+   Units go inside \mathrm{...} with \, between them, like $\mathrm{m\,s^{-2}}$
+   and $4.18\ \mathrm{J\,g^{-1}\,K^{-1}}$. Where the cookbook does not cover
+   something, compose it and then check it against the three syntax rules in
+   that document: braces balance, every ^ and _ has a base immediately before
+   it, and every command is one you are certain exists here. If you are not
+   certain a command exists, rewrite the expression with ones you are.
 9. Never place ^ or _ immediately after a spacing command. $\,^{\circ}C$ is
    invalid LaTeX; write $\,{}^{\circ}\mathrm{C}$ or restructure the expression.
    Chemistry notation such as \ce{...} is not available — write
    $\mathrm{H_2SO_4}$.
 
-BEFORE YOU ANSWER — check your own output
-10. Re-read every question and option you have written and confirm, one at a
-    time: each mcq answer value is one of that question's own option keys; each
-    numeric question has a tolerance; every $ is paired; every { has a matching
-    }; no ^ or _ follows a \, or \; ; no mathematics is left as plain text; and
-    every command you used appears in the document's cookbook.
+BEFORE YOU ANSWER — check your own output mechanically, not by re-reading
+10. Go through the finished YAML looking for these four things specifically,
+    scanning for the pattern rather than reading for sense. A careful re-read
+    misses them; a character-by-character pass does not.
+      a. every { has a matching }, per string
+      b. no ^ or _ immediately follows \, \; \! \quad or \qquad
+      c. an even number of $ on every line
+      d. no mathematics left as plain text
+    Then confirm, question by question, that each mcq answer value is one of
+    that question's own option keys and each numeric question has a tolerance.
 
 FIGURES
 11. Do not include an image field on any question. If a question genuinely
@@ -681,25 +705,61 @@ If the upload is rejected, the list it gives you names the line and the
 question number for each problem, and fixing them all and re-uploading is safe
 — nothing was written the first time.
 
+### A mechanical check before you upload
+
+The three items above about braces, spacing commands and dollar signs are the
+ones a careful re-read reliably misses — they are pattern faults, and reading
+for sense skips straight over them. Save this as `check.py` next to your
+`test.yaml` and run it instead:
+
+```python
+import re, sys
+
+for n, line in enumerate(open(sys.argv[1], encoding="utf-8"), 1):
+    if line.count("{") != line.count("}"):
+        print(f"line {n}: braces do not balance -- {line.strip()}")
+    if re.search(r"\\(?:,|;|!|quad|qquad)\s*[\^_]", line):
+        print(f"line {n}: ^ or _ straight after a spacing command -- {line.strip()}")
+    if line.count("$") % 2:
+        print(f"line {n}: odd number of $ -- {line.strip()}")
+```
+
+```bash
+python3 check.py test.yaml
+```
+
+Silence means those three faults are absent. Anything it prints is worth
+looking at, though not every hit is a fault: it reads one line at a time, so a
+question written as a block scalar over several lines, or `$$` display maths
+split across lines, can show up as unbalanced. Judge each one.
+
+It does not know which commands exist, and it does not know whether your
+formula says what you meant. Those still need the cookbook and your eyes.
+
+If you are having an AI write the paper, tell it to run these same three checks
+over its output before answering — the instruction block in
+[section 6](#6-the-instruction-block-to-paste) already does.
+
 ---
 
 ## 9. The one check nothing else does: read the paper on screen
 
-**Do this every time.** It takes a minute and it is the only thing that catches
-broken mathematics, because broken mathematics uploads perfectly happily.
+**Do this every time.** It takes a minute, and it is the last thing between a
+broken formula and a student, because broken mathematics uploads perfectly
+happily. The checks before this one are mechanical and catch pattern faults;
+this one catches everything else.
 
 After the upload succeeds, stay on the same page. Below the upload control is
 the **Questions** panel, showing the whole paper exactly as a student will see
 it. Read down it and look for:
 
-1. **Anything red.** Red is how a mathematical expression that could not be
-   typeset is displayed — the raw source, in red, in the middle of the
-   question. It is unmistakable once you know to look.
+1. **Any expression that did not typeset.** A formula that failed shows up as
+   something other than laid-out mathematics — backslashes, braces and command
+   names sitting in the middle of the sentence.
 2. **Stray dollar signs** on screen. A `$` you can actually see means its pair
    is missing and the maths around it was never typeset.
 3. **Mathematics that is still plain text.** `x^2` and `m/s^2` will sit there
-   looking like ordinary typing. This is the failure with no visual alarm at
-   all, so it needs your eyes rather than a colour.
+   looking like ordinary typing.
 4. **Formulae that render but say the wrong thing** — a missing minus sign, a
    subscript that swallowed the next character.
 
