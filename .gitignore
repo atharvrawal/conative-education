@@ -1,0 +1,5 @@
+# Yours, not the repository's. Both appear in this folder once you run it, and
+# neither belongs in git: the backups are your students' data, and .env holds
+# whatever password you set.
+backups/
+.env

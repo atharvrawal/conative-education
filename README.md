@@ -8,15 +8,17 @@ You need **Docker Desktop** (Windows or Mac) or **Docker Engine** (Linux) on the
 computer that will run it. Nothing else — no source code, no build tools, no
 configuration file to fill in.
 
-**1. Download `docker-compose.yml` into a folder of its own.**
+**1. Download it into a folder of its own.**
 
 ```bash
-mkdir conative && cd conative
-curl -O https://raw.githubusercontent.com/atharvrawal/conative-education/main/docker-compose.yml
+git clone https://github.com/atharvrawal/conative-education.git conative
+cd conative
 ```
 
-On Windows or Mac without `curl`: use the green **Code** button above,
-**Download ZIP**, and take `docker-compose.yml` out of it.
+Cloning rather than saving one file is what makes [updating](#updating) a
+single command later. If you do not have `git`, use the green **Code** button
+above and **Download ZIP** instead — everything works the same, with one extra
+step when you update.
 
 **2. Start it.**
 
@@ -167,9 +169,9 @@ alternate, so a corrupt one is never the only copy.
 
 ## Restore from backup
 
-On a fresh machine, or on this one after something went badly wrong. You need
-Docker installed, `docker-compose.yml`, and one dated backup folder. Put the
-backup folder inside a `backups` folder next to the compose file, as it was.
+On a fresh machine, or on this one after something went badly wrong. Install
+Docker and do [step 1 of Setup](#setup) again to get the compose file, then put
+your dated backup folder inside a `backups` folder next to it, as it was.
 
 **1. Start the database on its own** and wait for it to be ready:
 
@@ -211,21 +213,53 @@ database before you have restored anything.
 
 ## Updating
 
-Download the current `docker-compose.yml` over your old one, then:
+> ⚠️ **Never run `docker compose down -v` as part of an update.** The `-v`
+> deletes the database and uploads volumes permanently — every student, every
+> paper, every result, gone with no way back. An update needs no `down` at all.
+
+Have a look at [CHANGELOG.md](CHANGELOG.md) first to see what you are getting.
+Then, in the folder with the compose file:
 
 ```bash
-curl -O https://raw.githubusercontent.com/atharvrawal/conative-education/main/docker-compose.yml
-docker compose pull
+git pull
 docker compose up -d
 ```
 
-Any database changes the new version needs are applied automatically while it
-starts. Your data is kept. Take a fresh backup first anyway — `docker compose
-restart backup`, and check the new folder appeared before you pull.
+That is the whole update. **It never touches your data.**
 
-The image versions are written into the compose file, so a stack that is
-running today will still be running the same build tomorrow. Nothing updates
-unless you download a new one.
+**Why there is no separate download step.** `git pull` brings you the new
+compose file, and that file points at a new version of the software — say
+`1.0.2` where it used to say `1.0.1`. Your machine does not have that version
+yet, so `docker compose up -d` sees an image it is missing and fetches it
+before starting the container, exactly as it did on your very first run.
+Nothing else needs asking for.
+
+**Why so little seems to happen.** Only the containers whose version actually
+changed get recreated; anything already on the right version is left running
+untouched. Your database and uploaded images live in volumes that are not part
+of any container, so they are not involved either way. Some updates change only
+the compose file and recreate nothing at all.
+
+**Do it outside a live test.** Recreating a container costs a few seconds of
+downtime. Students mid-test are not in danger — the app retries saving on its
+own and nothing is lost — but there is no reason to make anyone watch a
+spinner. Between sessions, or at the end of the day.
+
+**Take a backup first anyway.** `docker compose restart backup`, then check
+that a new dated folder appeared in `backups`.
+
+**If you downloaded the ZIP instead of cloning**, there is no `git pull` to
+run. Download the ZIP again, replace your old `docker-compose.yml` with the new
+one, and run `docker compose up -d`. Leave the `backups` folder where it is.
+
+**Do not edit `docker-compose.yml`.** `git pull` will refuse to overwrite your
+changes and you will be stuck. Everything worth changing can be set in a `.env`
+file next to it instead — see [Settings you can change](#settings-you-can-change).
+
+**Downgrading is not supported.** Going back to an older compose file after a
+newer one has run is not something to attempt: a newer version may have changed
+the shape of the database, and the older software will not understand it. If an
+update has gone wrong, do not roll back on your own — ask first.
 
 ## If something is wrong
 
