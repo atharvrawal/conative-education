@@ -69,9 +69,25 @@ down for the night will not undo it.
 Everything after this happens in the admin panel — creating groups, approving
 students, uploading test papers, watching a test run, downloading results.
 
-To write a paper, see **[paper-generator-format.md](paper-generator-format.md)** —
-the upload format in full, including a prompt you can hand to an AI assistant to
-draft one for you.
+There are two ways to get questions into a test, and they write the same thing.
+Upload a zip, or type questions one at a time on the test's Questions tab — the
+editor shows you the mathematics rendered as you type, so a broken formula is
+caught there rather than by a student mid-test. Uploading a zip replaces the
+whole paper, including anything typed in.
+
+**Download paper** on the same tab gives you the paper as it stands now, as a
+zip you can upload into another test, keep as a file, or hand to someone else.
+It is built from the questions currently in the test, so it carries anything you
+corrected in the editor — not whatever file was first uploaded, if there ever
+was one.
+
+To write a paper as a file, see
+**[paper-generator-format.md](paper-generator-format.md)** — the upload format in
+full, including a prompt you can hand to an AI assistant to draft one for you.
+
+A test's name, duration and time window can all be changed afterwards, on the
+Settings tab. The window controls who may *start* the test; a student already
+sitting it keeps the deadline they were given.
 
 ---
 
