@@ -48,7 +48,7 @@ services:
       retries: 20
 
   api:
-    image: ghcr.io/atharvrawal/conative-api:1.1.0
+    image: ghcr.io/atharvrawal/conative-api:1.2.0
     restart: unless-stopped
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://conative:conative@db:5432/conative}
@@ -89,7 +89,7 @@ services:
       start_period: 30s
 
   web:
-    image: ghcr.io/atharvrawal/conative-web:1.1.0
+    image: ghcr.io/atharvrawal/conative-web:1.2.0
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-8080}:80"
