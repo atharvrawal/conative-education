@@ -89,6 +89,21 @@ A test's name, duration and time window can all be changed afterwards, on the
 Settings tab. The window controls who may *start* the test; a student already
 sitting it keeps the deadline they were given.
 
+### Camera monitoring
+
+Before a test starts, each student is asked to turn on their camera, and it
+stays on for the whole test. The video is not shown on screen — the camera
+light is the only sign of it. Nothing is recorded
+or uploaded — the video stays in the student's browser. If the camera goes off
+mid-test, the paper is hidden until it is turned back on, and their time keeps
+running. A student with no usable camera can still sit the test; it shows up as
+a flag in Results.
+
+Browsers only allow the camera on a secure address: one starting `https://`,
+or `http://localhost` on the computer running it. On a plain
+`http://192.168.1.42:8080` address students can still sit tests, but every
+attempt is taken without the camera and flagged *camera unavailable*.
+
 ---
 
 ## Stopping and starting
