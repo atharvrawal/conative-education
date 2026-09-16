@@ -95,20 +95,20 @@ others:
 
 | Field | Required | Type | Notes |
 | --- | --- | --- | --- |
-| `type` | **yes** | text | Exactly `mcq_single` or `numeric` |
+| `type` | **yes** | text | Exactly `mcq_single`, `numeric` or `subjective` |
 | `text` | **yes** | text | The question itself. May contain LaTeX — [section 5](#5-latex) |
 | `marks_correct` | **yes** | number | Awarded for a right answer |
 | `marks_incorrect` | **yes** | number | For a wrong answer. Normally negative or `0` |
 | `marks_unattempted` | **yes** | number | For leaving it blank. Normally `0` |
 | `image` | no | text | A path inside the zip — [section 4](#4-images) |
 | `time_limit_seconds` | no | whole number | Per-question limit. `null`, `0` or `-1` all mean untimed |
-| `options` | mcq only | list | At least two. **Forbidden on numeric** |
-| `answer` | **yes** | text or number | An option key for mcq, a number for numeric |
-| `tolerance` | numeric only | number | **Forbidden on mcq** |
+| `options` | mcq only | list | At least two. **Forbidden on numeric and subjective** |
+| `answer` | mcq and numeric | text or number | An option key for mcq, a number for numeric. **Forbidden on subjective** |
+| `tolerance` | numeric only | number | **Forbidden on mcq and subjective** |
 
 **There are no defaults.** A field that is not optional above must be written
 out on every single question, even when its value is the same every time. In
-particular all three marks fields are required on all questions of both types:
+particular all three marks fields are required on every question type:
 
 ```
 marks_correct is required on every question
@@ -169,6 +169,28 @@ tolerance: 0.01
   must match exactly.
 - `options` on a numeric question gives
   `a numeric question cannot have options`.
+
+### `subjective` — a written answer
+
+```yaml
+- type: subjective
+  text: 'Explain why the sky appears blue during the day.'
+  time_limit_seconds: null
+  marks_correct: 4
+  marks_incorrect: 0
+  marks_unattempted: 0
+  answer: 'Shorter wavelengths are scattered more strongly by the atmosphere.' # optional
+```
+
+The student receives a multiline text box. `answer` is optional text. When
+present, it appears as the correct answer in the review PDF after grading. It
+does not mark the response automatically. Do not include `options` or
+`tolerance`; the importer rejects either field.
+
+`marks_correct` is the maximum mark for manual grading. The teacher may enter
+a decimal value from `0.00` through that maximum. Negative values and values
+above the maximum are rejected. The attempt has no total score until the teacher
+has entered a mark for every subjective question and submitted the grade sheet.
 
 ### How rejection looks
 
@@ -536,13 +558,15 @@ SCHEMA
 1. Follow the schema in that document exactly. Every question must carry type,
    text, marks_correct, marks_incorrect, marks_unattempted, and — for
    mcq_single — at least two options and an answer matching one of their keys,
-   or — for numeric — an unquoted numeric answer and a tolerance.
+   or — for numeric — an unquoted numeric answer and a tolerance. A subjective
+   question may have a quoted text answer, but must not have options or tolerance.
 2. Use only the fields listed in that document. Do not add fields of your own
    such as difficulty, topic, subject, explanation or solution, and do not add
    section headings. Any extra field causes the upload to be rejected.
 3. Use marks_correct: 4, marks_incorrect: -1, marks_unattempted: 0 for
    multiple-choice questions, and marks_correct: 4, marks_incorrect: 0,
-   marks_unattempted: 0 for numeric questions, unless I have said otherwise.
+   marks_unattempted: 0 for numeric and subjective questions, unless I have
+   said otherwise.
 4. Do not include a groups field.
 
 MATHEMATICS — the part most likely to go wrong
@@ -650,9 +674,9 @@ Then in the admin panel: create the test, open it, and upload `paper.zip`.
 
 Read down the file once. Almost every rejection is one of these.
 
-**Every question, both types**
+**Every question, all three types**
 
-- [ ] `type` is exactly `mcq_single` or `numeric`
+- [ ] `type` is exactly `mcq_single`, `numeric` or `subjective`
 - [ ] `text` is present and not blank
 - [ ] All three of `marks_correct`, `marks_incorrect`, `marks_unattempted` are
       written out — on **every** question, with no exceptions
@@ -673,6 +697,11 @@ Read down the file once. Almost every rejection is one of these.
 - [ ] `answer` is a bare number with no quotes: `9.81`, not `"9.81"`
 - [ ] `tolerance` is present on every one of them, `0` for an exact match
 - [ ] No `options`
+
+**Subjective questions**
+
+- [ ] `answer`, when present, is quoted text
+- [ ] No `options` or `tolerance`
 
 **Mathematics** — nothing here will fail the upload, so this pass is the only
 thing standing between a bad expression and a student
