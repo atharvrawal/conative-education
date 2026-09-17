@@ -23,11 +23,11 @@ by a student. That is the failure this document works hardest to prevent.
 ## 1. What this produces
 
 A **zip file** containing one text file — `test.yaml` (or `test.json`) — that
-describes the whole paper, plus any image files that paper refers to. You
-upload that zip in the admin panel: create the test first, open it, and use its
-upload control. The paper is checked as a whole and either imported completely
-or rejected completely, with every problem listed at once. A re-upload replaces
-the previous paper for that test entirely.
+describes the whole paper, plus any image files that paper refers to. In the
+admin panel, select **Create a test**, enter the test details, continue to
+**Questions**, and upload the zip. The paper is checked as a whole and either
+imported completely or rejected completely, with every problem listed at once.
+A re-upload replaces the previous paper for that test entirely.
 
 A paper with no diagrams is a zip containing a single file. That is a perfectly
 normal paper, and it is what an AI can produce unaided.
@@ -71,9 +71,10 @@ end. Adding any of those fails the upload. **Do not invent fields.**
 
 ### The `test:` block — all optional
 
-You create the test in the admin panel before uploading, so it already has a
-name, a duration and a time window. Anything you put here *overwrites* what is
-there. Anything you leave out is left alone. The whole block may be omitted.
+You enter the test details in the admin panel before uploading, so the test
+already has a name, a duration, and a time window. Anything you put here
+*overwrites* what is there. Anything you leave out is left alone. The whole
+block may be omitted.
 
 | Field | Type | Rules and what a mistake says |
 | --- | --- | --- |
@@ -96,14 +97,14 @@ others:
 | Field | Required | Type | Notes |
 | --- | --- | --- | --- |
 | `type` | **yes** | text | Exactly `mcq_single`, `numeric` or `subjective` |
-| `text` | **yes** | text | The question itself. May contain LaTeX — [section 5](#5-latex) |
+| `text` | **yes** | text | The question itself. May contain LaTeX — [section 5](#5-mathematics-and-latex) |
 | `marks_correct` | **yes** | number | Awarded for a right answer |
 | `marks_incorrect` | **yes** | number | For a wrong answer. Normally negative or `0` |
 | `marks_unattempted` | **yes** | number | For leaving it blank. Normally `0` |
 | `image` | no | text | A path inside the zip — [section 4](#4-images) |
 | `time_limit_seconds` | no | whole number | Per-question limit. `null`, `0` or `-1` all mean untimed |
 | `options` | mcq only | list | At least two. **Forbidden on numeric and subjective** |
-| `answer` | mcq and numeric | text or number | An option key for mcq, a number for numeric. **Forbidden on subjective** |
+| `answer` | mcq and numeric; optional for subjective | text or number | An option key for mcq, a number for numeric, or optional answer text for subjective |
 | `tolerance` | numeric only | number | **Forbidden on mcq and subjective** |
 
 **There are no defaults.** A field that is not optional above must be written
@@ -666,7 +667,8 @@ works too, as long as there is only one test file inside it.
 On **macOS**, select both, right-click, *Compress*. The extra `__MACOSX` entries
 the Finder adds are ignored.
 
-Then in the admin panel: create the test, open it, and upload `paper.zip`.
+Then select **Create a test** in the admin panel. Enter the test details,
+continue to **Questions**, and upload `paper.zip`.
 
 ---
 
