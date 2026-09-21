@@ -84,6 +84,9 @@ was one.
 To write a paper as a file, see
 **[paper-generator-format.md](paper-generator-format.md)** — the upload format in
 full, including a prompt you can hand to an AI assistant to draft one for you.
+A variable-difficulty test takes a different file, described in
+**[variable-difficulty-format.md](variable-difficulty-format.md)**. The Tests
+page has a button for each, which copies that document to your clipboard.
 
 A test's name, duration and time window can all be changed afterwards, on the
 Settings tab. The window controls who may *start* the test; a student already
